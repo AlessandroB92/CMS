@@ -1,0 +1,24 @@
+body {
+    font-family: 'Roboto Mono', monospace;
+    background-color: #f8f9fa;
+    color: #212529;
+}
+
+main>.container {
+    padding-top: 60px;
+}
+
+.table thead th.ASC:after {
+    content: " ▲";
+    color: grey;
+    font-size: 15px;
+}
+.table thead th.DESC:after {
+    content: " ▼";
+    color: grey;
+    font-size: 15px;
+}
+th {
+    cursor: pointer;
+    min-width: 60px;
+}

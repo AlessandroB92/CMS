@@ -1,7 +1,6 @@
 <?php
 
-require_once 'config.php';
-//var_dump($config);
+$config = require 'config.php';
 
 $mysqli = new mysqli(
     $config['host'],
@@ -9,8 +8,7 @@ $mysqli = new mysqli(
     $config['password'],
     $config['database']
 );
-unset($config);
 
-if($mysqli->connect_error) {
+if ($mysqli->connect_error) {
     die($mysqli->connect_error);
 }

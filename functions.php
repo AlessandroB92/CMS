@@ -1,6 +1,20 @@
 <?php
 require_once 'connection.php';
 
+function getConfig($param, $default = null)
+{
+    static $config = null;
+
+    if ($config === null) {
+        $config = include 'config.php';
+    }
+
+    return $config[$param] ?? $default;
+}
+function getParam($param, $default = '')
+{
+    return $_REQUEST[$param] ?? $default;
+}
 function getRandName()
 {
     $names = [
@@ -67,8 +81,7 @@ function getRandAge()
 
 function insertRandUsers($totale, $mysqli)
 {
-    while ($totale < 6) {
-        // Generate random user data
+    while ($totale < 1) {
         $username   = getRandName();
         $email      = getRandEmail($username);
         $fiscalCode = getRandFiscalCode();
@@ -86,5 +99,35 @@ function insertRandUsers($totale, $mysqli)
     }
     echo "Inserted $totale random users.\n";
 }
+// insertRandUsers(0, $mysqli);
 
-insertRandUsers(5, $mysqli);
+function getUsers(array $params = [])
+{
+    $conn = $GLOBALS['mysqli'];
+
+    $records = [];
+
+    $limit = $params['recordsPerPage'] ?? 10;
+    $orderBy = $params['orderBy'] ?? 'id';
+    $orderDir = $params['orderDir'] ?? '';
+    $search = $params['search'] ?? '';
+
+    $sql = "SELECT * FROM users ORDER BY $orderBy $orderDir LIMIT 0,$limit ";
+
+    $res = $conn->query($sql);
+    if ($res) {
+        while ($row = $res->fetch_assoc()) {
+            $records[] = $row;
+        }
+    }
+
+    return $records;
+}
+
+
+function dd(mixed $data = null)
+{
+    var_dump($data);
+    die();
+}
+// var_dump(getUsers());
