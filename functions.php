@@ -1,108 +1,94 @@
 <?php
 require_once 'connection.php';
-
 function getConfig($param, $default = null)
 {
-    static $config = null;
 
-    if ($config === null) {
-        $config = include 'config.php';
-    }
+    $config = require 'config.php';
 
-    return $config[$param] ?? $default;
+    return  $config[$param] ?? $default;
 }
 function getParam($param, $default = '')
 {
+
     return $_REQUEST[$param] ?? $default;
 }
-function getRandName()
+function getRandName(): string
 {
     $names = [
-        'John',
-        'Jane',
-        'Alice',
-        'Bob',
-        'Charlie',
-        'Diana',
-        'Ethan',
-        'Fiona',
-        'George',
-        'Hannah'
+        'ROBERTO', 'GIOVANNI', 'GIULIA', 'MARIO', 'ALE'
     ];
     $lastnames = [
-        'Smith',
-        'Johnson',
-        'Williams',
-        'Jones',
-        'Brown',
-        'Davis',
-        'Miller',
-        'Wilson',
-        'Moore',
-        'Taylor'
+        'ROSSI', 'RE', 'ARIAS', 'SMITH', 'MENDOZA', 'CRUZ', 'WILDE'
+
     ];
 
-    $rand1 = mt_rand(0, count($names) - 1);
-    $rand2 = mt_rand(0, count($lastnames) - 1);
-    return $names[$rand1] . ' ' . $lastnames[$rand2];
+    $rand1 =  random_int(0, count($names) - 1);
+    $rand2 =  random_int(0, count($lastnames) - 1);
+
+    return  $names[$rand1] . ' ' . $lastnames[$rand2];
 }
 
 //echo getRandName();
-
-function getRandEmail($name)
+function getRandEmail(string $name): string
 {
-    $domains = ['google.com', 'yahoo.com', 'hotmail.com'];
-    $rand1 = mt_rand(0, count($domains) - 1);
-    return strtolower(str_replace(' ', '.', $name) . mt_rand(10, 99) . '@' . $domains[$rand1]);
+
+    $domains = ['google.com', 'yahoo.com', 'hotmail.it', 'libero.it'];
+
+    $rand1 =  random_int(0, count($domains) - 1);
+
+    return  strtolower(str_replace(' ', '.', $name) . random_int(10, 99) . '@' . $domains[$rand1]);
 }
-
-//echo getRandEmail(getRandName());
-
-function getRandFiscalCode()
+function getRandFiscalCode(): string
 {
+
     $i = 16;
-    $res = '';
+    $res = '';  // ABQZ
 
     while ($i > 0) {
-        $res .= chr(mt_rand(65, 90));
+
+        $res .= chr(random_int(65, 90));
 
         $i--;
     }
     return $res;
 }
-
-//echo getRandFiscalCode();
-
-function getRandAge()
+function getRandomAge(): int
 {
-    return mt_rand(0, 100);
+    return random_int(0, 120);
 }
-//echo getRandAge();
-
-function insertRandUsers($totale, $mysqli)
+function insertRandUser($totale, mysqli $conn): void
 {
-    while ($totale < 1) {
-        $username   = getRandName();
-        $email      = getRandEmail($username);
-        $fiscalCode = getRandFiscalCode();
-        $age        = getRandAge();
+
+    while ($totale > 0) {
+
+        $username = getRandName();
+        $email = getRandEmail($username);
+        $fiscalcode = getRandFiscalCode();
+        $age = getRandomAge();
 
         $sql = 'INSERT INTO users (username, email, fiscalcode, age) VALUES ';
-        $sql .= "('$username', '$email', '$fiscalCode', $age)";
-
-        $res = $mysqli->query($sql);
+        $sql .= " ('$username','$email', '$fiscalcode', $age) ";
+        echo $totale . ' ' . $sql . '<br>';
+        $res = $conn->query($sql);
         if (!$res) {
-            echo $mysqli->error;
+            echo $conn->error . '<br>';
         } else {
-            $totale++;
+            $totale--;
         }
     }
-    echo "Inserted $totale random users.\n";
 }
-// insertRandUsers(0, $mysqli);
 
-function getUsers(array $params = [])
+/**
+ * @var \Mysqli $mysqli
+ */
+//insertRandUser(300, $mysqli);
+function getUsers(array $params = []): array
 {
+
+    /**
+     * @var $conn mysqli
+     */
+
     $conn = $GLOBALS['mysqli'];
 
     $records = [];
@@ -112,10 +98,23 @@ function getUsers(array $params = [])
     $orderDir = $params['orderDir'] ?? '';
     $search = $params['search'] ?? '';
 
-    $sql = "SELECT * FROM users ORDER BY $orderBy $orderDir LIMIT 0,$limit ";
+    $sql = 'SELECT * FROM users';
+    if ($search) {
+        $sql .= ' WHERE';
+        if (is_numeric($search)) {
+            $sql .= " (id = $search OR age = $search)";
+        } else {
+            $sql .= " (fiscalcode like '%$search%' OR email like '%$search%' OR
+             username like '%$search%'
+            )";
+        }
+    }
 
+    $sql .= " ORDER BY $orderBy $orderDir  LIMIT  0,$limit ";
+    //   echo $sql;
     $res = $conn->query($sql);
     if ($res) {
+
         while ($row = $res->fetch_assoc()) {
             $records[] = $row;
         }
@@ -124,10 +123,42 @@ function getUsers(array $params = [])
     return $records;
 }
 
+function getTotalUserCount(string $search = ''): int
+{
+
+    /**
+     * @var $conn mysqli
+     */
+
+    $conn = $GLOBALS['mysqli'];
+
+
+    $sql = 'SELECT COUNT(*) as total FROM users';
+    if ($search) {
+        $sql .= ' WHERE';
+        if (is_numeric($search)) {
+            $sql .= " id = $search OR age = $search";
+        } else {
+            $search = $conn->real_escape_string($search);
+            $sql .= " fiscalcode like '%$search%' OR email like '%$search%' OR
+             username like '%$search%'";
+        }
+    }
+
+
+    echo $sql;
+    $res = $conn->query($sql);
+    if ($res && $row = $res->fetch_assoc()) {
+
+        return (int) $row['total'];
+    }
+
+    return 0;
+}
 
 function dd(mixed $data = null)
 {
     var_dump($data);
-    die();
+    die;
 }
-// var_dump(getUsers());
+//var_dump(getUsers());

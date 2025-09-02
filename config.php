@@ -1,11 +1,15 @@
 <?php
 
 return [
-    'host'     => 'localhost',
-    'username' => 'root',
-    'password' => '',
-    'database' => 'corsophp',
-    'recordsPerPage' => 100,
-    'orderByColumn' => ['id', 'username', 'fiscalcode', 'email', 'age'],
-    'recordsPerPageOptions' => [5, 10, 15, 20, 25, 50, 100],
+    'mysql_host' => 'localhost',
+    'mysql_user' => 'root',
+    'mysql_password' => '',
+    'mysql_db' => 'corsophp',
+    'recordsPerPage' => 10,
+    'orderByColumns' =>
+    ['id', 'username', 'fiscalcode', 'age', 'email'],
+    'recordsPerPageOptions' =>
+    [
+        5, 10, 15, 20, 50, 100
+    ]
 ];

@@ -1,14 +1,19 @@
 <?php
 
+
 $config = require 'config.php';
 
+
 $mysqli = new mysqli(
-    $config['host'],
-    $config['username'],
-    $config['password'],
-    $config['database']
+    $config['mysql_host'],
+    $config['mysql_user'],
+    $config['mysql_password'],
+    $config['mysql_db']
 );
 
-if ($mysqli->connect_error) {
-    die($mysqli->connect_error);
-}
+ unset($config );
+
+ if($mysqli->connect_error){
+     die($mysqli->connect_error);
+ }
+ 
