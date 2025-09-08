@@ -9,7 +9,21 @@
 <script src='https://cdn.jsdelivr.net/npm/bootstrap@5.2/dist/js/bootstrap.bundle.min.js'></script>
 
 
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const message = document.getElementById('message');
+        if (message) {
+            setTimeout(() => {
+                message.classList.add('fade-out');
 
+                setTimeout(() => {
+                    message.style.display = 'none';
+                }, 2000); 
+            }, 5000);
+
+        }
+    });
+</script>
 </body>
 
 </html>

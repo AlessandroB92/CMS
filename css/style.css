@@ -1,24 +1,26 @@
 body {
-    font-family: 'Roboto Mono', monospace;
-    background-color: #f8f9fa;
-    color: #212529;
+    font-family: 'Noto Sans', Georgia, Helvetica, sans-serif;
+}
+i.fa-solid {
+    margin-right: 5px;
 }
 
-main>.container {
-    padding-top: 60px;
-}
-
-.table thead th.ASC:after {
-    content: " ▲";
-    color: grey;
-    font-size: 15px;
+.table thead th.ASC:after,
+.table thead th.DESC:after {
+    content: '↑';
+    color: red;
+    font-weight: bold;
+    padding: 3px;
 }
 .table thead th.DESC:after {
-    content: " ▼";
-    color: grey;
-    font-size: 15px;
+    content: '↓';
 }
-th {
-    cursor: pointer;
-    min-width: 60px;
+
+a.disabled {
+    background-color: blue;
+}
+.fade-out {
+    opacity: 0;
+
+    transition: opacity 2s ease-out;
 }

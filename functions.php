@@ -1,4 +1,5 @@
 <?php
+
 require_once 'connection.php';
 function getConfig($param, $default = null)
 {
@@ -15,10 +16,20 @@ function getParam($param, $default = '')
 function getRandName(): string
 {
     $names = [
-        'ROBERTO', 'GIOVANNI', 'GIULIA', 'MARIO', 'ALE'
+        'ROBERTO',
+        'GIOVANNI',
+        'GIULIA',
+        'MARIO',
+        'ALE'
     ];
     $lastnames = [
-        'ROSSI', 'RE', 'ARIAS', 'SMITH', 'MENDOZA', 'CRUZ', 'WILDE'
+        'ROSSI',
+        'RE',
+        'ARIAS',
+        'SMITH',
+        'MENDOZA',
+        'CRUZ',
+        'WILDE'
 
     ];
 
@@ -81,7 +92,7 @@ function insertRandUser($totale, mysqli $conn): void
 /**
  * @var \Mysqli $mysqli
  */
-//insertRandUser(300, $mysqli);
+//insertRandUser(300, getConnection());
 function getUsers(array $params = []): array
 {
 
@@ -89,15 +100,16 @@ function getUsers(array $params = []): array
      * @var $conn mysqli
      */
 
-    $conn = $GLOBALS['mysqli'];
+    $conn = getConnection();
 
     $records = [];
 
     $limit = $params['recordsPerPage'] ?? 10;
     $orderBy = $params['orderBy'] ?? 'id';
-    $orderDir = $params['orderDir'] ?? '';
+    $orderDir = $params['orderDir'] ?? 'DESC';
     $search = $params['search'] ?? '';
-
+    $page = $params['page'] ?? 1;
+    $start = $limit * ($page - 1);
     $sql = 'SELECT * FROM users';
     if ($search) {
         $sql .= ' WHERE';
@@ -110,8 +122,8 @@ function getUsers(array $params = []): array
         }
     }
 
-    $sql .= " ORDER BY $orderBy $orderDir  LIMIT  0,$limit ";
-    //   echo $sql;
+    $sql .= " ORDER BY $orderBy $orderDir  LIMIT  $start,$limit ";
+    // echo $sql;
     $res = $conn->query($sql);
     if ($res) {
 
@@ -130,7 +142,7 @@ function getTotalUserCount(string $search = ''): int
      * @var $conn mysqli
      */
 
-    $conn = $GLOBALS['mysqli'];
+    $conn = getConnection();
 
 
     $sql = 'SELECT COUNT(*) as total FROM users';
@@ -146,7 +158,7 @@ function getTotalUserCount(string $search = ''): int
     }
 
 
-    echo $sql;
+    //echo $sql;
     $res = $conn->query($sql);
     if ($res && $row = $res->fetch_assoc()) {
 
@@ -156,9 +168,294 @@ function getTotalUserCount(string $search = ''): int
     return 0;
 }
 
-function dd(mixed $data = null)
+function dd(mixed ...$data)
 {
     var_dump($data);
     die;
 }
-//var_dump(getUsers());
+function showSessionMsg()
+{
+    if (!empty($_SESSION['message'])) {
+        $message = $_SESSION['message'];
+        unset($_SESSION['message']);
+        $alertType = $_SESSION['messageType'];
+        unset($_SESSION['messageType']);
+        require_once 'view/message.php';
+    }
+}
+function handleAvatarUpload(array $file, ?int $userId = null): ?string
+{
+
+
+    $config = require 'config.php';
+    $uploadDir = $config['uploadDir'] ?? 'avatar';
+    $uploadDirPath = realpath(__DIR__) . '/' . $uploadDir . '/';
+    $mimeMap = [
+        'image/jpeg' => 'jpg',
+        'image/png' => 'png',
+        'image/gif' => 'gif'
+    ];
+    $fileinfo = new finfo(FILEINFO_MIME_TYPE);
+    $mimeType = $fileinfo->file($file['tmp_name']);
+    //$extension = pathinfo($file['name']);
+    $extension = $mimeMap[$mimeType];
+    $fileName = ($userId ? $userId . '_' : '') . bin2hex(random_bytes(8)) . '.' . $extension;
+    $res = move_uploaded_file($file['tmp_name'], $uploadDirPath . $fileName);
+    return $res ? $uploadDir . '/' . $fileName : null;
+}
+function validateFileUpload(array $file): array
+{
+    $errors = [];
+
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        $errors[] = getUploadError($file['error']);
+        return $errors;
+    }
+    $config = require 'config.php';
+
+    $fileinfo = new finfo(FILEINFO_MIME_TYPE);
+    $mimeType = $fileinfo->file($file['tmp_name']);
+    if (!in_array($mimeType, $config['mimeTyped'] ?? ['image/jpeg'])) {
+        $errors[] = 'Invalid file type.Allowed types: ' . implode(',', $config['mimeTypes']);
+    }
+    if ($file['size'] > $config['maxFileSize']) {
+        $errors[] = 'File size exceeds ' . $config['maxFileSize'];
+    }
+    return $errors;
+}
+
+function getUploadError(int $errorCode): string
+{
+    $error = '';
+
+    switch ($errorCode) {
+        case UPLOAD_ERR_INI_SIZE:
+        case UPLOAD_ERR_FORM_SIZE:
+
+            $error = 'File size exceeds the allowed limit.';
+            break;
+        case UPLOAD_ERR_PARTIAL:
+            $error  = 'The file was only partially uploaded.';
+            break;
+        case UPLOAD_ERR_NO_FILE:
+            $error  = 'No file was uploaded.';
+            break;
+        case UPLOAD_ERR_NO_TMP_DIR:
+            $error  = 'Missing temporary folder.';
+            break;
+        case UPLOAD_ERR_CANT_WRITE:
+            $error = 'Failed to write file to disk.';
+            break;
+        case UPLOAD_ERR_EXTENSION:
+            $error  = 'File upload stopped by extension.';
+            break;
+        default:
+            $error = 'Unknown file upload error.';
+            break;
+    }
+    return $error;
+}
+function getUploadDir(): string
+{
+    $uploadDir = getConfig('uploadDir', 'avatar');
+    $uploadDir = realpath(__DIR__) . '/' . trim($uploadDir, '/') . '/';
+    return $uploadDir;
+}
+function createThumbnailAndIntermediate(string $avatarPath): void
+{
+    $config = require 'config.php';
+    $fileName = basename($avatarPath);
+    $uploadDirPath = getUploadDir();
+    $thumbnailPath = $uploadDirPath . 'thumbnail_' . $fileName;
+    $intermediatePath = $uploadDirPath . 'intermediate_' . $fileName;
+    $sourcePath = $uploadDirPath . $fileName;
+    $thumbnailWidth = $config['thumbnailWidth'] ?? 120;
+    $intermediateWidth = $config['intermediateWidth'] ?? 800;
+    $mimeType = mime_content_type($sourcePath);
+    resizeImage($sourcePath, $thumbnailPath, $thumbnailWidth, $mimeType);
+    resizeImage($sourcePath, $intermediatePath, $intermediateWidth, $mimeType);
+}
+
+
+
+
+
+
+
+
+
+
+
+function resizeImage(string $sourcePath, string $targetPath, int $width, string $mimeType): void
+{
+
+    switch ($mimeType) {
+        case 'image/jpeg':
+            $sourceImage = imagecreatefromjpeg($sourcePath);
+            break;
+        case 'image/png':
+            $sourceImage = imagecreatefrompng($sourcePath);
+            break;
+        case 'image/gif':
+            $sourceImage = imagecreatefromgif($sourcePath);
+            break;
+        default:
+            return;
+    }
+    $originalWidth = imagesx($sourceImage);
+    $originalHeight = imagesy($sourceImage); // 2000 * 120/3000
+    $newHeight = floor($originalHeight * ($width / $originalWidth));
+    $newImage = imagecreatetruecolor($width, $newHeight);
+    imagecopyresampled(
+        $newImage,
+        $sourceImage,
+        0,
+        0,
+        0,
+        0,
+        $width,
+        $newHeight,
+        $originalWidth,
+        $originalHeight
+    );
+
+    switch ($mimeType) {
+        case 'image/jpeg':
+            imagejpeg($newImage, $targetPath, getConfig('jpegQuality', 90));
+            break;
+        case 'image/png':
+            imagepng($newImage, $targetPath);
+            break;
+        case 'image/gif':
+            imagegif($newImage, $targetPath);
+            break;
+        default:
+            return;
+    }
+
+    imagedestroy($sourceImage);
+    imagedestroy($newImage);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function setFlashMessage(string $message, string $type = 'info')
+{
+    $_SESSION['message'] = $message;
+    $_SESSION['messageType'] = $type;
+}
+
+function redirectWithParams(): void
+{
+    $params = $_GET;
+    if (isset($params['id']))
+        unset($params['id']);
+    if (isset($params['action'])) {
+        unset($params['action']);
+    }
+    $queryString = http_build_query($params);
+    header('Location:../index.php?' . $queryString);
+    exit;
+}
+function convertMaxUploadSizeToBytes(): int
+{
+    $maxUploadSize = ini_get('upload_max_filesize'); // 2M, 2G
+    $number = (int)$maxUploadSize;
+    $unit = strtoupper(substr($maxUploadSize, -1));
+
+    switch ($unit) {
+        case 'G':
+            $number = $number * (1024 ** 3);
+            break;
+        case 'M':
+            $number = $number * (1024 ** 2);
+            break;
+        case 'K':
+            $number = $number * 1024;
+            break;
+    }
+
+    return $number;
+}
+function formatBytes(int $bytes): string
+{
+    //20970000 
+    $units = ['Bytes', 'Kilobytes', 'Megabytes', 'Gigabytes'];
+    $power = floor(log($bytes, 1024));
+    $number = round($bytes / 1024 ** $power, 2);
+    return $number . ' ' . $units[$power];
+}
+function validateUserData(array $data): array
+{
+    $errors = [];
+    if (
+        empty($data['username']) || strlen($data['username']) > 64
+        || strlen($data['username']) < 3
+    ) {
+        $errors['username'] = 'Invalid username: must be non-empty and min 3 and max 64 chars.';
+    }
+    if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+        $errors['email'] = 'Invalid email format.';
+    }
+    if (empty($data['fiscalcode']) || strlen($data['fiscalcode']) !== 16) {
+        $errors['fiscalcode'] = 'Fiscal code must be exactly 16 characters.';
+    }
+    if ($data['age'] < 18 || $data['age'] > 120) {
+        $errors['age'] = 'Age must be between 18 and 120.';
+    }
+    return $errors;
+}
+function getImgThumbNail(string $path, string $size = 's'): array
+{
+    $imgWidth = getConfig($size === 's' ? 'thumbnailWidth' : 'intermediateWidth', 120);
+    $fileData = ['width' => $imgWidth, 'avatar' => ''];
+    $prefix = $size === 's' ? 'thumbnail_' : 'intermediate_';
+    $fileName = $prefix . basename($path);
+    $thumbnail = getConfig('uploadDir', 'avatar')
+        . '/' . $fileName;
+
+    $uploadDir  = getUploadDir() . '/' . $fileName;
+    if (file_exists($uploadDir)) {
+        $fileData['avatar'] = $thumbnail;
+        $fileData['width'] = $imgWidth;
+    }
+
+    return $fileData;
+}
+function deleteUserImages(string $avatarPath): void
+{
+    if (!$avatarPath) {
+        return;
+    }
+    $uploadDir = getUploadDir();
+    $fileName = basename($avatarPath);
+    $avatarFile = $uploadDir . $fileName;
+    $thumbnail = $uploadDir . 'thumbnail_' . $fileName;
+    $intermediate = $uploadDir . 'intermediate_' . $fileName;
+    if (file_exists($avatarFile)) {
+        unlink($avatarFile);
+    }
+    if (file_exists($thumbnail)) {
+        unlink($thumbnail);
+    }
+    if (file_exists($intermediate)) {
+        unlink($intermediate);
+    }
+}
