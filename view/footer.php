@@ -1,29 +1,19 @@
-<footer class='footer mt-auto py-3 bg-light'>
-    <div class='container'>
-        <span class='text-muted'>
-            @copyright <?= date('d/m/Y') ?> </span>
+
+<footer class="footer">
+    <div class="container">
+        <span class="text-muted">&copy; USER MANAGEMENT SYSTEM <?=date('d/m/Y')?></span>
     </div>
 </footer>
 
-
-<script src='https://cdn.jsdelivr.net/npm/bootstrap@5.2/dist/js/bootstrap.bundle.min.js'></script>
-
-
+<!-- Bootstrap core JavaScript
+================================================== -->
+<!-- Placed at the end of the document so the pages load faster -->
+<script src="js/jquery-3.3.1.min.js"></script>
+<script src="js/popper.min.js"></script>
+<script src="js/bootstrap.min.js"></script>
+<script src="js/scripts.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const message = document.getElementById('message');
-        if (message) {
-            setTimeout(() => {
-                message.classList.add('fade-out');
-
-                setTimeout(() => {
-                    message.style.display = 'none';
-                }, 2000); 
-            }, 5000);
-
-        }
-    });
+    $('#message').fadeOut(8000);
 </script>
 </body>
-
 </html>

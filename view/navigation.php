@@ -1,49 +1,69 @@
 <?php
-function createPagination(
-    int $totalRecords,
-    int $recordsPerPage,
-    int $currentPage,
-    string $baseUrl,
-    int $maxLinks = 10
-) {
-
-    $totalPages = (int)ceil($totalRecords / $recordsPerPage);
-
-    $html = '<nav aria-label="Page navigation">';
-    $html .=  '<ul class="pagination mt-2 justify-content-center">';
-    $disabled = $currentPage === 1 ? ' disabled' : '';
-    $previous = max(($currentPage - 1), 1);
-    $html .=  '<li class="page-item' . $disabled . '">
-            <a  href="' . $baseUrl . ' &page=' . $previous . '" class="page-link">Previous</a>
-        </li>';
-
-    // current page 5,6,7,8,9  10, 11,12,13,14,15,16,17
-       $startPage =(int) max(1,$currentPage - floor($maxLinks / 2));
-       $endPage = min($startPage + $maxLinks - 1, $totalPages);
-
-       if(($endPage - $startPage +1) < $maxLinks){
-           $startPage = max(1, $endPage - $maxLinks + 1 );
-       }
-
-    for ($i = $startPage; $i <= $endPage; $i++) {
-        
-        if($i === $currentPage){
-             $html .= '<li class="page-item"><span class="page-link active">'.$i.'</span></li>';
-        } else{
-            $html .=  '<li class="page-item"><a class="page-link" href="' . $baseUrl . '&page=' . $i . '">' . $i . '</a></li>';
-
-        }
-    }
+ $numLinks = getConfig('numLinkNavigator', 5);
+?>
+<nav>
+    <ul class="pagination justify-content-center">
+        <li class="page-item<?= $page==1 ?' disabled':''?>">
+            <a class="page-link" href="<?="$pageUrl?$navOrderByQueryString&page=".($page-1)?>" tabindex="-1">Previous</a>
+        </li>
+        <?php
+              // 12 +5 = 17
+              // 17 - 14 = 3
+        //  6 + 5 = 11
+        // 11 -14 = -3  non prendiamo se il valore negativo
+        $extraLink = $page + $numLinks - $numPages;
+        $extraLink = $extraLink >0 ? $extraLink : 0;
+          $startValue = $page - $numLinks - $extraLink;
 
 
-    $disabled = $currentPage === $totalPages ? ' disabled' : '';
+           $startValue = $startValue < 1 ? 1 : $startValue;
+         for ($i = $startValue ; $i < $page; $i++): ?>
+             <li class="page-item">
+                 <a class="page-link" href="<?="$pageUrl?$navOrderByQueryString&page=$i"?>">
+                     <?=$i?>
+                 </a>
+             </li>
+        <?php
 
-    $next = min(($currentPage + 1), $totalPages);
-    $html .=
-        '<li class="page-item' . $disabled . '">
-            <a  href="' . $baseUrl . ' &page=' . $next . '" class="page-link' . $disabled . '">Next </a>
-        </li>';
-    $html .= '</ul>
-</nav>';
-    return $html;
-}
+         endfor;
+
+            ?>
+
+             <li class="page-item active">
+                 <a href="#" class="page-link disabled">
+                 <?=$page?>
+                 </a>
+             </li>
+        <?php
+        //    page = 2;
+         // 2 -5 = -3
+        $extraLink = ($page - $numLinks) < 0 ? abs($page - $numLinks) : 0;
+
+        $startValue = $page + 1 ;
+        $startValue = $startValue < 1 ? 1 : $startValue;
+        $endValue = $page  + $numLinks  + $extraLink;
+
+         $endValue = min($endValue, $numPages);
+
+        for ($i = $startValue ; $i <=$endValue; $i++): ?>
+            <li class="page-item">
+                <a class="page-link" href="<?="$pageUrl?$navOrderByQueryString&page=$i"?>">
+                    <?=$i?>
+                </a>
+            </li>
+        <?php
+
+        endfor;
+
+        ?>
+
+
+
+
+        <li class="page-item<?= $page == $numPages ?' disabled':''?>">
+            <a class="page-link" href="<?="$pageUrl?$navOrderByQueryString&page=".($page+1)?>">
+                Next
+            </a>
+        </li>
+    </ul>
+</nav>
